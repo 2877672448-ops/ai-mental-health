@@ -1,0 +1,80 @@
+# ==========================================================
+# 隐私敏感 & 凭据（绝不能提交到仓库）
+# ==========================================================
+ai-springboot/src/main/resources/application.yml
+ai-springboot/src/main/resources/application-local.yml
+ai-springboot/src/main/resources/application-dev.yml
+ai-springboot/src/main/resources/application-prod.yml
+ai-springboot/src/main/resources/*.p12
+ai-springboot/src/main/resources/*.jks
+ai-springboot/src/main/resources/*.pem
+ai-vue/.env
+ai-vue/.env.local
+ai-vue/.env.development.local
+ai-vue/.env.production.local
+*.env
+*.secret
+*.password
+.credentials
+
+# ==========================================================
+# 构建产物 & 依赖
+# ==========================================================
+ai-springboot/target/
+ai-springboot/.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+ai-vue/node_modules/
+ai-vue/dist/
+ai-vue/dist-ssr/
+ai-vue/.vite/
+ai-vue/*.local
+
+# ==========================================================
+# IDE / 编辑器配置
+# ==========================================================
+.idea/
+ai-springboot/.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+ai-vue/.vscode/*
+!.vscode/extensions.json
+.settings/
+.project
+.classpath
+.factorypath
+.springBeans
+.sts4-cache
+.apt_generated
+*.sw?
+.suo
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# ==========================================================
+# 系统 & 日志
+# ==========================================================
+.DS_Store
+Thumbs.db
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+hs_err_pid*
+
+# ==========================================================
+# Gradle / NetBeans / 其他构建产物
+# ==========================================================
+build/
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/

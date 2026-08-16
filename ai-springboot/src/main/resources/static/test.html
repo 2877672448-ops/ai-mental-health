@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 心理疏导助手 - 后端测试页面</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: "Microsoft YaHei", sans-serif; background: #f0f2f5; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        h1 { text-align: center; color: #333; margin-bottom: 20px; font-size: 22px; }
+        .row { display: flex; gap: 16px; margin-bottom: 16px; }
+        .card { background: #fff; border-radius: 8px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.08); flex: 1; }
+        .card h2 { font-size: 15px; color: #4a90d9; margin-bottom: 12px; border-left: 3px solid #4a90d9; padding-left: 8px; }
+        label { display: block; font-size: 12px; color: #888; margin: 8px 0 2px; }
+        input, select { width: 100%; padding: 7px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; }
+        button { padding: 8px 18px; border: none; border-radius: 4px; background: #4a90d9; color: #fff; font-size: 13px; cursor: pointer; margin-top: 12px; }
+        button:hover { background: #3a7bc0; }
+        button:disabled { background: #aaa; cursor: not-allowed; }
+        .status { font-size: 12px; margin-top: 8px; min-height: 18px; }
+        .status.ok { color: #52c41a; }
+        .status.err { color: #f5222d; }
+        .badge { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 12px; background: #eee; color: #999; }
+        .badge.on { background: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; }
+        #chatBox { height: 320px; overflow-y: auto; border: 1px solid #eee; border-radius: 6px; padding: 12px; background: #fafafa; margin-bottom: 10px; }
+        .msg { margin-bottom: 10px; display: flex; }
+        .msg .bubble { max-width: 75%; padding: 8px 12px; border-radius: 8px; font-size: 13px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+        .msg.user { justify-content: flex-end; }
+        .msg.user .bubble { background: #4a90d9; color: #fff; }
+        .msg.ai .bubble { background: #fff; border: 1px solid #e8e8e8; color: #333; }
+        .msg.sys { justify-content: center; }
+        .msg.sys .bubble { background: transparent; color: #999; font-size: 12px; }
+        .chat-input { display: flex; gap: 8px; }
+        .chat-input input { flex: 1; }
+        .chat-input button { margin-top: 0; }
+        #rawLog { background: #282c34; color: #98c379; font-family: Consolas, monospace; font-size: 11px; padding: 10px; border-radius: 6px; height: 160px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
+        .token-show { font-size: 11px; color: #666; word-break: break-all; background: #f6f6f6; padding: 6px; border-radius: 4px; margin-top: 8px; min-height: 20px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>AI 心理疏导助手 · 后端接口测试页</h1>
+
+    <div class="row">
+        <!-- 注册 -->
+        <div class="card">
+            <h2>1. 用户注册 <span class="badge" id="regBadge">未注册</span></h2>
+            <label>用户名</label><input id="regUsername" value="panju01">
+            <label>邮箱</label><input id="regEmail" value="panju01@example.com">
+            <label>密码</label><input id="regPassword" type="password" value="123456">
+            <label>确认密码</label><input id="regConfirm" type="password" value="123456">
+            <label>性别（1男 2女）</label><input id="regGender" value="1">
+            <button onclick="register()">注册</button>
+            <div class="status" id="regStatus"></div>
+        </div>
+
+        <!-- 登录 -->
+        <div class="card">
+            <h2>2. 用户登录 <span class="badge" id="loginBadge">未登录</span></h2>
+            <label>用户名</label><input id="loginUsername" value="panju01">
+            <label>密码</label><input id="loginPassword" type="password" value="123456">
+            <button onclick="login()">登录</button>
+            <button onclick="getCurrentUser()" style="background:#67c23a">获取当前用户</button>
+            <div class="status" id="loginStatus"></div>
+            <div class="token-show" id="tokenShow">token 尚未获取</div>
+        </div>
+    </div>
+
+    <!-- AI 对话 -->
+    <div class="card">
+        <h2>3. AI 心理疏导对话（SSE 流式）<span class="badge" id="sessionBadge">会话未开启</span></h2>
+        <label>开场白（点击"开启会话"会自动创建会话并让 AI 回复这句话）</label>
+        <div class="chat-input">
+            <input id="initialMessage" value="你好，我最近压力有点大，想找人聊聊">
+            <button onclick="startSession()">开启会话</button>
+        </div>
+        <div style="height:12px"></div>
+        <div id="chatBox">
+            <div class="msg sys"><div class="bubble">请先登录，再点击"开启会话"</div></div>
+        </div>
+        <div class="chat-input">
+            <input id="chatInput" placeholder="输入你想说的话，回车发送" onkeydown="if(event.key==='Enter')sendMessage()">
+            <button onclick="sendMessage()" id="sendBtn" disabled>发送</button>
+        </div>
+        <div class="status" id="chatStatus"></div>
+    </div>
+
+    <!-- 原始日志 -->
+    <div class="card">
+        <h2>接口原始响应日志</h2>
+        <div id="rawLog"></div>
+    </div>
+</div>
+
+<script>
+    let token = '';
+    let sessionId = '';
+    let streaming = false;
+
+    function log(raw) {
+        const box = document.getElementById('rawLog');
+        box.textContent += '[' + new Date().toLocaleTimeString() + '] ' + raw + '\n';
+        box.scrollTop = box.scrollHeight;
+    }
+
+    function setStatus(id, text, ok) {
+        const el = document.getElementById(id);
+        el.textContent = text;
+        el.className = 'status ' + (ok ? 'ok' : 'err');
+    }
+
+    // 通用 JSON 接口调用
+    async function api(url, body) {
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['token'] = token;
+        const resp = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
+        const json = await resp.json();
+        log(url + ' => ' + JSON.stringify(json));
+        return json;
+    }
+
+    // 注册
+    async function register() {
+        try {
+            const json = await api('/api/user/add', {
+                username: regUsername.value, email: regEmail.value,
+                password: regPassword.value, confirmPassword: regConfirm.value,
+                gender: Number(regGender.value)
+            });
+            if (json.code === '200') {
+                setStatus('regStatus', '注册成功，可以直接登录了', true);
+                regBadge.textContent = '已注册'; regBadge.className = 'badge on';
+                loginUsername.value = regUsername.value;
+            } else {
+                setStatus('regStatus', '注册失败：' + json.msg, false);
+            }
+        } catch (e) { setStatus('regStatus', '请求异常：' + e, false); }
+    }
+
+    // 登录
+    async function login() {
+        try {
+            const json = await api('/api/user/login', {
+                username: loginUsername.value, password: loginPassword.value
+            });
+            if (json.code === '200') {
+                token = json.data.token;
+                setStatus('loginStatus', '登录成功：' + json.data.userInfo.username, true);
+                loginBadge.textContent = '已登录'; loginBadge.className = 'badge on';
+                tokenShow.textContent = token;
+            } else {
+                setStatus('loginStatus', '登录失败：' + json.msg, false);
+            }
+        } catch (e) { setStatus('loginStatus', '请求异常：' + e, false); }
+    }
+
+    // 获取当前用户
+    async function getCurrentUser() {
+        if (!token) { setStatus('loginStatus', '请先登录', false); return; }
+        try {
+            const resp = await fetch('/api/user/current', { headers: { 'token': token } });
+            const json = await resp.json();
+            log('/api/user/current => ' + JSON.stringify(json));
+            if (json.code === '200') {
+                setStatus('loginStatus', '当前用户：' + JSON.stringify(json.data), true);
+            } else {
+                setStatus('loginStatus', '获取失败：' + json.msg, false);
+            }
+        } catch (e) { setStatus('loginStatus', '请求异常：' + e, false); }
+    }
+
+    // 聊天气泡
+    function appendMsg(role, text) {
+        const box = document.getElementById('chatBox');
+        const div = document.createElement('div');
+        div.className = 'msg ' + role;
+        div.innerHTML = '<div class="bubble"></div>';
+        div.querySelector('.bubble').textContent = text;
+        box.appendChild(div);
+        box.scrollTop = box.scrollHeight;
+        return div.querySelector('.bubble');
+    }
+
+    // 开启会话：创建会话 + 自动把开场白发往流式接口获取 AI 回复
+    async function startSession() {
+        if (!token) { setStatus('chatStatus', '请先登录', false); return; }
+        if (streaming) return;
+        const initial = initialMessage.value.trim();
+        if (!initial) { setStatus('chatStatus', '开场白不能为空', false); return; }
+        try {
+            const json = await api('/api/psychological-chat/session/start', { initialMessage: initial });
+            if (json.code !== '200') { setStatus('chatStatus', '开启会话失败：' + json.msg, false); return; }
+            sessionId = json.data.sessionId;
+            sessionBadge.textContent = '会话 ' + sessionId; sessionBadge.className = 'badge on';
+            document.getElementById('chatBox').innerHTML = '';
+            sendBtn.disabled = false;
+            setStatus('chatStatus', '会话已开启', true);
+            // 把开场白作为第一条消息发给 AI
+            appendMsg('user', initial);
+            await streamChat(initial);
+        } catch (e) { setStatus('chatStatus', '请求异常：' + e, false); }
+    }
+
+    // 发送聊天消息
+    async function sendMessage() {
+        if (!sessionId) { setStatus('chatStatus', '请先开启会话', false); return; }
+        if (streaming) return;
+        const text = chatInput.value.trim();
+        if (!text) return;
+        chatInput.value = '';
+        appendMsg('user', text);
+        await streamChat(text);
+    }
+
+    // SSE 流式调用：POST 请求 + ReadableStream 手动解析
+    async function streamChat(userMessage) {
+        streaming = true;
+        sendBtn.disabled = true;
+        setStatus('chatStatus', 'AI 正在回复…', true);
+        const aiBubble = appendMsg('ai', '');
+        let fullText = '';
+        try {
+            const resp = await fetch('/api/psychological-chat/stream', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'token': token },
+                body: JSON.stringify({ sessionId, userMessage })
+            });
+            log('/api/psychological-chat/stream => HTTP ' + resp.status + ' (SSE 流开始)');
+            const reader = resp.body.getReader();
+            const decoder = new TextDecoder('utf-8');
+            let buffer = '';
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+                // SSE 事件以空行分隔
+                let idx;
+                while ((idx = buffer.indexOf('\n\n')) >= 0) {
+                    const rawEvent = buffer.slice(0, idx);
+                    buffer = buffer.slice(idx + 2);
+                    const chunk = handleSseEvent(rawEvent, aiBubble);
+                    if (chunk === '__DONE__') { buffer = ''; break; }
+                    if (chunk) fullText += chunk;
+                }
+            }
+            setStatus('chatStatus', 'AI 回复完成（' + fullText.length + ' 字）', true);
+        } catch (e) {
+            setStatus('chatStatus', '流式请求异常：' + e, false);
+            log('STREAM ERROR: ' + e);
+        } finally {
+            streaming = false;
+            sendBtn.disabled = false;
+        }
+    }
+
+    // 解析单个 SSE 事件，返回文本片段 / __DONE__ / null
+    function handleSseEvent(raw, aiBubble) {
+        let event = 'message', data = '';
+        raw.split('\n').forEach(line => {
+            if (line.startsWith('event:')) event = line.slice(6).trim();
+            else if (line.startsWith('data:')) data += line.slice(5).trim();
+        });
+        if (!data) return null;
+        if (event === 'done') { log('SSE event: done'); return '__DONE__'; }
+        try {
+            const json = JSON.parse(data);
+            log('SSE event: ' + event + ' => ' + data);
+            if (event === 'error') {
+                appendMsg('sys', '⚠ ' + (json.msg || 'AI 服务异常'));
+                return '__DONE__';
+            }
+            if (json.code === '200' && json.data && typeof json.data.content === 'string') {
+                aiBubble.textContent += json.data.content;
+                document.getElementById('chatBox').scrollTop = document.getElementById('chatBox').scrollHeight;
+                return json.data.content;
+            }
+        } catch (e) { log('SSE 解析失败: ' + data); }
+        return null;
+    }
+</script>
+</body>
+</html>
